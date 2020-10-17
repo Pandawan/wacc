@@ -1,20 +1,21 @@
 import Token, { TokenType } from "./token.ts";
+import { CharCode, isAlpha, isDigit, isAlphanumeric } from "./chars.ts";
 
 const KEYWORDS: { [str: string]: TokenType } = {
-  "class": TokenType.CLASS,
-  "else": TokenType.ELSE,
-  "false": TokenType.FALSE,
-  "fn": TokenType.FN,
-  "for": TokenType.FOR,
-  "if": TokenType.IF,
-  "null": TokenType.NULL,
-  "print": TokenType.PRINT,
-  "return": TokenType.RETURN,
-  "super": TokenType.SUPER,
-  "this": TokenType.THIS,
-  "true": TokenType.TRUE,
-  "var": TokenType.VAR,
-  "while": TokenType.WHILE,
+  "class": TokenType.class,
+  "else": TokenType.else,
+  "false": TokenType.false,
+  "fn": TokenType.fn,
+  "for": TokenType.for,
+  "if": TokenType.if,
+  "null": TokenType.null,
+  "print": TokenType.print,
+  "return": TokenType.return,
+  "super": TokenType.super,
+  "this": TokenType.this,
+  "true": TokenType.true,
+  "var": TokenType.var,
+  "while": TokenType.while,
 };
 
 export default class Lexer {
@@ -49,57 +50,59 @@ export default class Lexer {
     this.start = this.current;
 
     if (this.isAtEnd()) {
-      return this.makeToken(TokenType.EOF);
+      return this.makeToken(TokenType.eof);
     }
 
     let c = this.advance();
 
     // Don't want to switch over all possible characters, so match them early here
-    if (this.isAlpha(c)) return this.makeIdentifierOrKeyword();
-    if (this.isDigit(c)) return this.makeNumber();
+    if (isAlpha(c)) return this.makeIdentifierOrKeyword();
+    if (isDigit(c)) return this.makeNumber();
 
     switch (c) {
-      case "(":
-        return this.makeToken(TokenType.LEFT_PAREN);
-      case ")":
-        return this.makeToken(TokenType.RIGHT_PAREN);
-      case "{":
-        return this.makeToken(TokenType.LEFT_BRACE);
-      case "}":
-        return this.makeToken(TokenType.RIGHT_BRACE);
-      case ",":
-        return this.makeToken(TokenType.COMMA);
-      case ".":
-        return this.makeToken(TokenType.DOT);
-      case "-":
-        return this.makeToken(TokenType.MINUS);
-      case "+":
-        return this.makeToken(TokenType.PLUS);
-      case ";":
-        return this.makeToken(TokenType.SEMICOLON);
-      case "/":
-        return this.makeToken(TokenType.SLASH);
-      case "*":
-        return this.makeToken(TokenType.STAR);
+      case CharCode.leftParen:
+        return this.makeToken(TokenType.leftParen);
+      case CharCode.rightParen:
+        return this.makeToken(TokenType.rightBrace);
+      case CharCode.rightBrace:
+        return this.makeToken(TokenType.leftBrace);
+      case CharCode.rightParen:
+        return this.makeToken(TokenType.rightBrace);
+      case CharCode.comma:
+        return this.makeToken(TokenType.comma);
+      case CharCode.dot:
+        return this.makeToken(TokenType.dot);
+      case CharCode.minus:
+        return this.makeToken(TokenType.minus);
+      case CharCode.plus:
+        return this.makeToken(TokenType.plus);
+      case CharCode.semicolon:
+        return this.makeToken(TokenType.semicolon);
+      case CharCode.slash:
+        return this.makeToken(TokenType.slash);
+      case CharCode.star:
+        return this.makeToken(TokenType.star);
 
-      case "!":
+      case CharCode.bang:
         return this.makeToken(
-          this.match("=") ? TokenType.BANG_EQUAL : TokenType.BANG,
+          this.match(CharCode.equal) ? TokenType.bangEqual : TokenType.bang,
         );
-      case "=":
+      case CharCode.equal:
         return this.makeToken(
-          this.match("=") ? TokenType.EQUAL_EQUAL : TokenType.EQUAL,
+          this.match(CharCode.equal) ? TokenType.equalEqual : TokenType.equal,
         );
-      case "<":
+      case CharCode.less:
         return this.makeToken(
-          this.match("=") ? TokenType.LESS_EQUAL : TokenType.LESS,
+          this.match(CharCode.equal) ? TokenType.lessEqual : TokenType.less,
         );
-      case ">":
+      case CharCode.greater:
         return this.makeToken(
-          this.match("=") ? TokenType.GREATER_EQUAL : TokenType.GREATER,
+          this.match(CharCode.equal)
+            ? TokenType.greaterEqual
+            : TokenType.greater,
         );
 
-      case '"':
+      case CharCode.quote:
         return this.makeString();
     }
 
@@ -128,7 +131,7 @@ export default class Lexer {
    */
   makeErrorToken(message: string): Token {
     return {
-      type: TokenType.ERROR,
+      type: TokenType.error,
       // In error token, the lexeme is the error message
       lexeme: message,
       start: this.start,
@@ -154,7 +157,7 @@ export default class Lexer {
     }
 
     this.advance();
-    return this.makeToken(TokenType.STRING);
+    return this.makeToken(TokenType.string);
   }
 
   /**
@@ -163,18 +166,18 @@ export default class Lexer {
    */
   makeNumber(): Token {
     // Keep consuming digits
-    while (this.isDigit(this.peek())) this.advance();
+    while (isDigit(this.peek())) this.advance();
 
     // Look for fractional part
-    if (this.peek() === "." && this.isDigit(this.peekNext())) {
+    if (this.peek() === "." && isDigit(this.peekNext())) {
       // Consume the dot (.)
       this.advance();
 
       // Keep consuming fractional digits
-      while (this.isDigit(this.peek())) this.advance();
+      while (isDigit(this.peek())) this.advance();
     }
 
-    return this.makeToken(TokenType.NUMBER);
+    return this.makeToken(TokenType.number);
   }
 
   /**
@@ -184,14 +187,14 @@ export default class Lexer {
    */
   makeIdentifierOrKeyword(): Token {
     // Keep consuming alpha (letters and underscore) or digits
-    while (this.isAlpha(this.peek()) || this.isDigit(this.peek())) {
+    while (isAlphanumeric(this.peek())) {
       this.advance();
     }
 
     // Look for keyword that matches the current lexeme, otherwise it's an identifier
     const tokenType = KEYWORDS[
       this.source.substring(this.start, this.current)
-    ] ?? TokenType.IDENTIFIER;
+    ] ?? TokenType.identifier;
 
     return this.makeToken(tokenType);
   }
@@ -280,28 +283,6 @@ export default class Lexer {
           return;
       }
     }
-  }
-
-  //#endregion
-
-  //#region Character Determiner
-
-  /**
-   * Whether or not the given character represents a digit.
-   * @param char 
-   */
-  isDigit(char: string): boolean {
-    // Regex to test for a single digit character.
-    return /^\d$/.test(char);
-  }
-
-  // TODO: Either export these regexes outside of the function so they're not compiled every function call, or find a non-regex way.
-  /**
-   * Whether or not the given character represents a letter or underscore (_).
-   * @param char 
-   */
-  isAlpha(char: string): boolean {
-    return /^[a-z]|[A-Z]|_$/.test(char);
   }
 
   //#endregion

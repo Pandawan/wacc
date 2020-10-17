@@ -6,6 +6,7 @@ A tiny programming language implemented in TypeScript that compiles to WASM.
 
 - Lexer
 
+  - [Wrenalayzer Lexer](https://github.com/munificent/wrenalyzer/blob/master/lexer.wren)
   - [Crafting Interpreters C Scanner](https://craftinginterpreters.com/scanning-on-demand.html)
     - [Wren Compiler](https://github.com/wren-lang/wren/blob/main/src/vm/wren_compiler.c)
   - [Kaleidoscope LLVM Lexer](https://llvm.org/docs/tutorial/MyFirstLanguageFrontend/LangImpl01.html)
