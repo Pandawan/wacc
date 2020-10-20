@@ -1,27 +1,11 @@
 import Lexer from "./src/lexer/lexer.ts";
-import { TokenType } from "./src/lexer/token.ts";
+import Parser from "./src/parser/parser.ts";
 
-const source = `print 1 + 2; abc "hello world" true // comment`;
+const source = `1 + -2`;
 
 const lexer = new Lexer(source);
 
-// Trying out the lexer and outputting tokens
-let line = 0;
-while (true) {
-  let outputStr = "";
+// printTokens(lexer)
 
-  const token = lexer.scanToken();
-
-  if (token.line !== line) {
-    outputStr += line.toString().padStart(4) + " ";
-    line = token.line;
-  } else {
-    outputStr += "   | ";
-  }
-
-  outputStr += `${token.type} '${token.lexeme}'`;
-
-  console.log(outputStr);
-
-  if (token.type === TokenType.eof) break;
-}
+const parser = new Parser(lexer);
+console.log(parser.parseModule());
