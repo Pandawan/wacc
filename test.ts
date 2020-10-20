@@ -19,9 +19,9 @@ while (true) {
     outputStr += "   | ";
   }
 
-  outputStr += `${TokenType[token.type]} '${token.lexeme}'`;
+  outputStr += `${token.type} '${token.lexeme}'`;
 
   console.log(outputStr);
 
-  if (token.type === TokenType.EOF) break;
+  if (token.type === TokenType.eof) break;
 }

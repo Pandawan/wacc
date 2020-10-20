@@ -115,7 +115,7 @@ export default class Lexer {
    * Make a token with the given type.
    * @param type
    */
-  makeToken(type: TokenType): Token {
+  private makeToken(type: TokenType): Token {
     return {
       type,
       lexeme: this.source.substring(this.start, this.current),
@@ -129,7 +129,7 @@ export default class Lexer {
    * Make an error token with the given error message.
    * @param message
    */
-  makeErrorToken(message: string): Token {
+  private makeErrorToken(message: string): Token {
     return {
       type: TokenType.error,
       // In error token, the lexeme is the error message
@@ -144,7 +144,7 @@ export default class Lexer {
    * Make a string token.
    * Assumes the leading quote (") has already been consumed.
    */
-  makeString(): Token {
+  private makeString(): Token {
     // Keep consuming until a closing quote (") or eof is reached.
     while (this.peek() !== '"' && this.isAtEnd() === false) {
       // Support multiline strings
@@ -164,7 +164,7 @@ export default class Lexer {
    * Make a number token.
    * Assumes the leading digit has already been consumed.
    */
-  makeNumber(): Token {
+  private makeNumber(): Token {
     // Keep consuming digits
     while (isDigit(this.peek())) this.advance();
 
@@ -185,7 +185,7 @@ export default class Lexer {
    * Assumes the leading alpha has already been consumed.
    * (These two types are grouped because they are both scanned in a similar fashion).
    */
-  makeIdentifierOrKeyword(): Token {
+  private makeIdentifierOrKeyword(): Token {
     // Keep consuming alpha (letters and underscore) or digits
     while (isAlphanumeric(this.peek())) {
       this.advance();
@@ -206,21 +206,21 @@ export default class Lexer {
   /** 
    * Whether or not the scanner has reached the end of the source string.
    */
-  isAtEnd(): boolean {
+  private isAtEnd(): boolean {
     return this.current === this.source.length;
   }
 
   /**
    * Get the current character without consuming it.
    */
-  peek(): string {
+  private peek(): string {
     return this.source.charAt(this.current);
   }
 
   /**
    * Get the next character without consuming it.
    */
-  peekNext(): string {
+  private peekNext(): string {
     if (this.isAtEnd()) return "";
     return this.source.charAt(this.current + 1);
   }
@@ -228,7 +228,7 @@ export default class Lexer {
   /**
    * Consume the current character and return it.
    */
-  advance(): string {
+  private advance(): string {
     this.current++;
     return this.source.charAt(this.current - 1);
   }
@@ -238,7 +238,7 @@ export default class Lexer {
    * Returns true if it succeeded.
    * @param expectedChar
    */
-  match(expectedChar: string): boolean {
+  private match(expectedChar: string): boolean {
     if (this.isAtEnd()) return false;
     if (this.source.charAt(this.current) !== expectedChar) return false;
 
@@ -249,7 +249,7 @@ export default class Lexer {
   /**
    * Skip whitespaces until a meaningful character is reached.
    */
-  skipWhitespace(): void {
+  private skipWhitespace(): void {
     while (true) {
       let c = this.peek();
 
