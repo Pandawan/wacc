@@ -24,6 +24,9 @@ Thinking of doing simple recursive descent parser with pratt parsing.
 
 - [Wren Parser](https://github.com/munificent/wrenalyzer/blob/master/parser.wren)
 - [Crafting Interpreters Java Parser](https://craftinginterpreters.com/parsing-expressions.html)
+- [Ianertson video Make a compiler: parsing](https://www.youtube.com/watch?v=I5PWv5OBZms)
+  - YT Series writing a compiler from start to finish in C, good to see implementation and thought process
+  - Code can be found on [GitHub](https://github.com/sebbekarlsson/hello)
 - [Crafting Interpreters C Parser/Compiler](https://craftinginterpreters.com/compiling-expressions.html)
   - This is nice but I don't want the bytecode conversion part
 - [Stack Overflow Building a Parser](https://stackoverflow.com/questions/9452584/building-a-parser-part-i)
@@ -43,3 +46,5 @@ Thinking of doing simple recursive descent parser with pratt parsing.
 
 - [Writing WebAssembly By Hand](https://blog.scottlogic.com/2018/04/26/webassembly-by-hand.html)
 - [WASM Manual](https://github.com/sunfishcode/wasm-reference-manual/blob/master/WebAssembly.md)
+- [UTF-8 Validation](https://lemire.me/blog/2020/10/20/ridiculously-fast-unicode-utf-8-validation/)
+  - Haven't looked too much into it, but if WASM requires custom string encoding, I could perhaps do this (unless JS has some utility functions for this?)

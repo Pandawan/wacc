@@ -10,93 +10,122 @@ import {
   StringExpression,
 } from "./ast.ts";
 
+type Module = Expression[];
+type ParserResult =
+  | [
+    hadError: true,
+    module: null,
+  ]
+  | [
+    hadError: false,
+    module: Module,
+  ];
+
 export default class Parser {
   private lexer: Lexer;
+
   /**
    * The most recently consumed token.
    */
-  private previous: Token | null;
+  private previous!: Token;
   /**
    * The current token yet to be consumed.
    */
-  private current: Token | null;
+  private current!: Token;
+
+  /**
+   * Whether or not an error occured while parsing.
+   */
   private hadError: boolean;
+
+  /**
+   * Whether or not the parser is in panic mode,
+   * ignoring all errors and attempting to synchronize to a safe state.
+   */
+  private panicMode: boolean;
 
   constructor(lexer: Lexer) {
     this.lexer = lexer;
-    this.previous = null;
-    this.current = null;
     this.hadError = false;
+    this.panicMode = false;
   }
 
-  parseModule() {
+  parseModule(): ParserResult {
     const statements = [];
-    while (this.peek() !== TokenType.eof) {
+
+    this.consume(); // Start consuming the first token
+
+    while (this.current.type !== TokenType.eof) {
       statements.push(this.parseExpression());
     }
 
     this.consume(TokenType.eof, "Expected end of input.");
-    return statements;
+
+    if (this.hadError) {
+      return [true, null];
+    }
+
+    return [false, statements];
   }
 
   private parseExpression(): Expression {
     return this.parseEquality();
   }
 
-  private parseEquality(): Expression {
-    let expr = this.parseComparison();
-    // TODO: Look into parseInfix (https://github.com/munificent/wrenalyzer/blob/master/parser.wren#L658)
-    while (this.match(TokenType.bangEqual, TokenType.equalEqual)) {
-      const operator = this.previous!.type; // HACK: non-null assertion
-      const right = this.parseComparison();
+  /**
+   * Parse a left-associative series of infix operator expressions using any
+   * of the given token types as operators and parsing the left and right 
+   * operands using the given function.
+   * @param tokenTypes Accepted tokens
+   * @param parseOperand Function to parse the left and right operands
+   */
+  private parseInfix(tokenTypes: TokenType[], parseOperand: () => Expression) {
+    let expr = parseOperand();
+    while (this.match(...tokenTypes)) {
+      const operator = this.previous.type;
+      const right = parseOperand();
       expr = new InfixExpression(expr, operator, right);
     }
+
     return expr;
   }
 
-  private parseComparison(): Expression {
-    let expr = this.parseTerm();
+  private parseEquality(): Expression {
+    return this.parseInfix(
+      [TokenType.bangEqual, TokenType.equalEqual],
+      this.parseComparison.bind(this),
+    );
+  }
 
-    while (
-      this.match(
+  private parseComparison(): Expression {
+    return this.parseInfix(
+      [
         TokenType.greater,
         TokenType.greaterEqual,
         TokenType.less,
         TokenType.lessEqual,
-      )
-    ) {
-      const operator = this.previous!.type; // HACK: non-null assertion
-      const right = this.parseTerm();
-      expr = new InfixExpression(expr, operator, right);
-    }
-    return expr;
+      ],
+      this.parseTerm.bind(this),
+    );
   }
 
   private parseTerm(): Expression {
-    let expr = this.parseFactor();
-
-    while (this.match(TokenType.minus, TokenType.plus)) {
-      const operator = this.previous!.type; // HACK: non-null assertion
-      const right = this.parseFactor();
-      expr = new InfixExpression(expr, operator, right);
-    }
-    return expr;
+    return this.parseInfix(
+      [TokenType.minus, TokenType.plus],
+      this.parseFactor.bind(this),
+    );
   }
 
   private parseFactor(): Expression {
-    let expr = this.parseUnary();
-
-    while (this.match(TokenType.slash, TokenType.star)) {
-      const operator = this.previous!.type; // HACK: non-null assertion
-      const right = this.parseUnary();
-      expr = new InfixExpression(expr, operator, right);
-    }
-    return expr;
+    return this.parseInfix(
+      [TokenType.slash, TokenType.star],
+      this.parseUnary.bind(this),
+    );
   }
 
   private parseUnary(): Expression {
     if (this.match(TokenType.bang, TokenType.minus)) {
-      const operator = this.previous!.type; // HACK: non-null assertion
+      const operator = this.previous.type;
       const right = this.parseUnary();
       return new PrefixExpression(operator, right);
     }
@@ -109,12 +138,12 @@ export default class Parser {
     if (this.match(TokenType.null)) return new NullExpression();
 
     if (this.match(TokenType.number)) {
-      return new NumberExpression(Number(this.previous!.lexeme)); // HACK: non-null assertion
+      return new NumberExpression(Number(this.previous.lexeme));
     }
 
     if (this.match(TokenType.string)) {
       return new StringExpression(
-        this.previous!.lexeme.substring(0, this.previous!.lexeme.length - 1), // HACK: non-null assertion
+        this.previous.lexeme.substring(0, this.previous.lexeme.length),
       );
     }
 
@@ -123,23 +152,31 @@ export default class Parser {
     return new NullExpression();
   }
 
+  /**
+   * Consumes the next token.
+   */
   private consume(): Token;
+  /**
+   * Consumes the next token and verify that it matches the given type.
+   * Otherwise, discard it and report an error.
+   * @param type 
+   * @param error 
+   */
   private consume(type: TokenType, error: string): Token;
   private consume(type?: TokenType, error?: string): Token {
-    // Get the next token
-    this.peek();
     this.previous = this.current;
-    this.current = null;
+    this.current = this.lexer.scanToken();
 
-    if (type !== undefined && error !== undefined) {
-      if (this.previous?.type !== type) {
-        this.error(error);
-      }
+    if (
+      // Branching for consume with type & error
+      type !== undefined && error !== undefined &&
+      // Check that the types match
+      this.current.type !== type
+    ) {
+      this.error(error);
     }
 
-    // TODO: Find a better approach that doesn't require non-null assertion
-    // HACK: non-null assertion
-    return this.previous!;
+    return this.previous;
   }
 
   /**
@@ -149,7 +186,7 @@ export default class Parser {
    */
   private match(...types: TokenType[]): Token | null {
     for (const type of types) {
-      if (this.peek() === type) {
+      if (this.current.type === type) {
         return this.consume();
       }
     }
@@ -157,21 +194,16 @@ export default class Parser {
   }
 
   /**
-   * Get the next token.
-   */
-  private peek(): TokenType {
-    if (this.current === null) {
-      this.current = this.lexer.scanToken();
-    }
-    return this.current.type;
-  }
-
-  /**
    * Report an error while parsing the current token.
    * @param message
    */
   error(message: string) {
+    // Error subsequent errors while panicking
+    if (this.panicMode) return; // TODO: Add panic mode synchronization (once statements are in)
+
     // TODO: Real error reporting
     console.error(message, this.current ?? this.previous);
+    this.hadError = true;
+    this.panicMode = true;
   }
 }
