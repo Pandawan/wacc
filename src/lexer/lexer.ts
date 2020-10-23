@@ -106,7 +106,7 @@ export default class Lexer {
         return this.makeString();
     }
 
-    return this.makeErrorToken("Unexpected character");
+    return this.makeErrorToken(`Unexpected character '${c}'.`);
   }
 
   //#region Token Creators
@@ -199,9 +199,9 @@ export default class Lexer {
     return this.makeToken(tokenType);
   }
 
-  //#endregion
+  //#endregion Token Creators
 
-  //#region Scanning Utilities
+  //#region Utilities
 
   /** 
    * Whether or not the scanner has reached the end of the source string.
@@ -285,5 +285,5 @@ export default class Lexer {
     }
   }
 
-  //#endregion
+  //#endregion Utilities
 }

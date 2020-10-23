@@ -58,3 +58,10 @@ Deno.test("Lexer comment", () => {
   const token = lexer.scanToken();
   assertEquals(token.type, TokenType.eof);
 });
+
+Deno.test("Lexer invalid", () => {
+  const lexer = new Lexer("#");
+  const token = lexer.scanToken();
+  assertEquals(token.type, TokenType.error);
+  assertEquals(token.lexeme, "Unexpected character '#'.");
+});

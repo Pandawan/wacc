@@ -1,4 +1,5 @@
 import {
+  assert,
   assertEquals,
 } from "https://deno.land/std@0.74.0/testing/asserts.ts";
 
@@ -12,6 +13,7 @@ import {
   StringExpression,
 } from "../src/parser/ast.ts";
 import { TokenType } from "../src/lexer/token.ts";
+import { JsonReporter } from "../src/parser/reporter.ts";
 
 Deno.test("Parser empty", () => {
   const lexer = new Lexer("");
@@ -85,4 +87,13 @@ Deno.test("Parser complex infix", () => {
       new NumberExpression(2),
     ),
   ]);
+});
+
+Deno.test("Parser invalid", () => {
+  const lexer = new Lexer("#");
+  const parser = new Parser(lexer);
+  const result = parser.parseModule();
+  assert(result[0]); // Had Errors
+  assert(result[1] instanceof JsonReporter);
+  assert(result[1].getIssues()[0].message === "Unexpected character '#'.");
 });

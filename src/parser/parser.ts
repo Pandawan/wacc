@@ -9,12 +9,15 @@ import {
   PrefixExpression,
   StringExpression,
 } from "./ast.ts";
+import { JsonReporter, Reporter } from "./reporter.ts";
 
+// For now, modules are just arrays of expressions, but will be more later on.
 type Module = Expression[];
+
 type ParserResult =
   | [
     hadError: true,
-    module: null,
+    reporter: Reporter,
   ]
   | [
     hadError: false,
@@ -36,7 +39,11 @@ export default class Parser {
   /**
    * Whether or not an error occured while parsing.
    */
-  private hadError: boolean;
+  private get hadError(): boolean {
+    return this.reporter.hadError;
+  }
+
+  private reporter: Reporter;
 
   /**
    * Whether or not the parser is in panic mode,
@@ -44,9 +51,9 @@ export default class Parser {
    */
   private panicMode: boolean;
 
-  constructor(lexer: Lexer) {
+  constructor(lexer: Lexer, reporter: Reporter = new JsonReporter()) { // By default create a JSON reporter
     this.lexer = lexer;
-    this.hadError = false;
+    this.reporter = reporter;
     this.panicMode = false;
   }
 
@@ -55,39 +62,26 @@ export default class Parser {
 
     this.consume(); // Start consuming the first token
 
-    while (this.current.type !== TokenType.eof) {
+    // TODO: Turn this into a while, and implement statements
+    if (this.current.type !== TokenType.eof) {
       statements.push(this.parseExpression());
+
+      // TODO: If panic mode, synchronize to a safe statement boundary
     }
 
     this.consume(TokenType.eof, "Expected end of input.");
 
     if (this.hadError) {
-      return [true, null];
+      return [true, this.reporter];
     }
 
     return [false, statements];
   }
 
+  //#region Expression Parsers
+
   private parseExpression(): Expression {
     return this.parseEquality();
-  }
-
-  /**
-   * Parse a left-associative series of infix operator expressions using any
-   * of the given token types as operators and parsing the left and right 
-   * operands using the given function.
-   * @param tokenTypes Accepted tokens
-   * @param parseOperand Function to parse the left and right operands
-   */
-  private parseInfix(tokenTypes: TokenType[], parseOperand: () => Expression) {
-    let expr = parseOperand();
-    while (this.match(...tokenTypes)) {
-      const operator = this.previous.type;
-      const right = parseOperand();
-      expr = new InfixExpression(expr, operator, right);
-    }
-
-    return expr;
   }
 
   private parseEquality(): Expression {
@@ -152,6 +146,28 @@ export default class Parser {
     return new NullExpression();
   }
 
+  //#endregion Expression Parsing
+
+  //#region Utilities
+
+  /**
+   * Parse a left-associative series of infix operator expressions using any
+   * of the given token types as operators and parsing the left and right 
+   * operands using the given function.
+   * @param tokenTypes Accepted tokens
+   * @param parseOperand Function to parse the left and right operands
+   */
+  private parseInfix(tokenTypes: TokenType[], parseOperand: () => Expression) {
+    let expr = parseOperand();
+    while (this.match(...tokenTypes)) {
+      const operator = this.previous.type;
+      const right = parseOperand();
+      expr = new InfixExpression(expr, operator, right);
+    }
+
+    return expr;
+  }
+
   /**
    * Consumes the next token.
    */
@@ -165,7 +181,15 @@ export default class Parser {
   private consume(type: TokenType, error: string): Token;
   private consume(type?: TokenType, error?: string): Token {
     this.previous = this.current;
-    this.current = this.lexer.scanToken();
+
+    // Keep scanning until the next non-error token
+    // This takes care of scanner errors without impacting the parser
+    while (true) {
+      this.current = this.lexer.scanToken();
+      if (this.current.type !== TokenType.error) break;
+
+      this.error(this.current.lexeme);
+    }
 
     if (
       // Branching for consume with type & error
@@ -197,13 +221,18 @@ export default class Parser {
    * Report an error while parsing the current token.
    * @param message
    */
-  error(message: string) {
-    // Error subsequent errors while panicking
+  error(message: string, token?: Token) {
+    // Ignore subsequent errors while panicking
     if (this.panicMode) return; // TODO: Add panic mode synchronization (once statements are in)
 
-    // TODO: Real error reporting
-    console.error(message, this.current ?? this.previous);
-    this.hadError = true;
+    // Use first token that is not null in chain: passed token -> current -> previous
+    const tokenToReport = token ?? (this.current ?? this.previous);
+
+    this.reporter.error(message, tokenToReport);
+
+    // Set panic mode, wait for synchronization
     this.panicMode = true;
   }
+
+  //#endregion Utilities
 }

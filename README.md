@@ -24,6 +24,8 @@ Thinking of doing simple recursive descent parser with pratt parsing.
 
 - [Wren Parser](https://github.com/munificent/wrenalyzer/blob/master/parser.wren)
 - [Crafting Interpreters Java Parser](https://craftinginterpreters.com/parsing-expressions.html)
+- [Otto - js parser in golang](https://github.com/robertkrimen/otto/tree/master/parser)
+  - Really nice parser and easy to read through
 - [Ianertson video Make a compiler: parsing](https://www.youtube.com/watch?v=I5PWv5OBZms)
   - YT Series writing a compiler from start to finish in C, good to see implementation and thought process
   - Code can be found on [GitHub](https://github.com/sebbekarlsson/hello)
@@ -41,6 +43,7 @@ Thinking of doing simple recursive descent parser with pratt parsing.
   - Shows another way to implement pratt parsing using a table (this is the approach that CraftingInterpreters takes).
 - [Stlab Simple Lexical Analyzer or Parser](http://stlab.cc/legacy/how-to-write-a-simple-lexical-analyzer-or-parser.html)
 - [Top Down Operator Precedence](http://crockford.com/javascript/tdop/tdop.html)
+- [Just write the #!%/\* parser](https://tiarkrompf.github.io/notes/?/just-write-the-parser/)
 
 ### Compiler / Emitter
 
