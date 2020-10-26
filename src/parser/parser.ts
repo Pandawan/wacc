@@ -3,16 +3,17 @@ import Token, { TokenType } from "../lexer/token.ts";
 import {
   BoolExpression,
   Expression,
+  ExpressionStatement,
   InfixExpression,
+  Module,
   NullExpression,
   NumberExpression,
   PrefixExpression,
+  PrintStatement,
+  Statement,
   StringExpression,
 } from "./ast.ts";
 import { JsonReporter, Reporter } from "./reporter.ts";
-
-// For now, modules are just arrays of expressions, but will be more later on.
-type Module = Expression[];
 
 type ParserResult =
   | [
@@ -62,11 +63,12 @@ export default class Parser {
 
     this.consume(); // Start consuming the first token
 
-    // TODO: Turn this into a while, and implement statements
-    if (this.current.type !== TokenType.eof) {
-      statements.push(this.parseExpression());
+    while (this.current.type !== TokenType.eof) {
+      statements.push(this.parseDeclaration());
 
-      // TODO: If panic mode, synchronize to a safe statement boundary
+      // If panic mode, synchronize to a safe statement boundary and keep parsing
+      // This allows for reporting as many errors as possible in one pass
+      if (this.panicMode) this.synchronize();
     }
 
     this.consume(TokenType.eof, "Expected end of input.");
@@ -75,8 +77,39 @@ export default class Parser {
       return [true, this.reporter];
     }
 
-    return [false, statements];
+    const module = new Module(statements);
+
+    return [false, module];
   }
+
+  //#region Statement Parsers
+
+  private parseDeclaration() {
+    // TODO: Variable declarations
+    return this.parseStatement();
+  }
+
+  private parseStatement(): Statement {
+    if (this.match(TokenType.print)) {
+      return this.parsePrintStatement();
+    } else {
+      return this.parseExpressionStatement();
+    }
+  }
+
+  private parsePrintStatement(): PrintStatement {
+    const expr = this.parseExpression();
+    this.consume(TokenType.semicolon, "Expected ';' after value.");
+    return new PrintStatement(expr);
+  }
+
+  private parseExpressionStatement(): ExpressionStatement {
+    const expr = this.parseExpression();
+    this.consume(TokenType.semicolon, "Expected ';' after expression.");
+    return new ExpressionStatement(expr);
+  }
+
+  //#endregion Statement Parsers
 
   //#region Expression Parsers
 
@@ -169,11 +202,11 @@ export default class Parser {
   }
 
   /**
-   * Consumes the next token.
+   * Consume the next token.
    */
   private consume(): Token;
   /**
-   * Consumes the next token and verify that it matches the given type.
+   * Consume the next token and verify that it matches the given type.
    * Otherwise, discard it and report an error.
    * @param type 
    * @param error 
@@ -191,20 +224,22 @@ export default class Parser {
       this.error(this.current.lexeme);
     }
 
+    // After consuming, check that it matched the given type
+    // (this means that erroring out still consumes)
     if (
       // Branching for consume with type & error
       type !== undefined && error !== undefined &&
       // Check that the types match
-      this.current.type !== type
+      this.previous.type !== type
     ) {
-      this.error(error);
+      this.error(error, this.previous);
     }
 
     return this.previous;
   }
 
   /**
-   * Consumes and returns the next token if its type is contained in the list.
+   * Consume and returns the next token if its type is contained in the list.
    * Returns null if none of the type matched.
    * @param types List of token types to match
    */
@@ -218,10 +253,40 @@ export default class Parser {
   }
 
   /**
+   * While in panic mode, attempt to synchronize the parser to a safe state 
+   * at the next statement boundary.
+   */
+  private synchronize() {
+    this.panicMode = false;
+
+    // Keep consuming tokens until reaches a statement boundary (or eof)
+    while (this.current.type != TokenType.eof) {
+      if (this.previous.type == TokenType.semicolon) return;
+
+      switch (this.current.type) {
+        case TokenType.class:
+        case TokenType.fn:
+        case TokenType.var:
+        case TokenType.for:
+        case TokenType.if:
+        case TokenType.while:
+        case TokenType.print:
+        case TokenType.return:
+          return;
+
+        default:
+          // Do nothing.
+      }
+
+      this.consume();
+    }
+  }
+
+  /**
    * Report an error while parsing the current token.
    * @param message
    */
-  error(message: string, token?: Token) {
+  private error(message: string, token?: Token) {
     // Ignore subsequent errors while panicking
     if (this.panicMode) return; // TODO: Add panic mode synchronization (once statements are in)
 

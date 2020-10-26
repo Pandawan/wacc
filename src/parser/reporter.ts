@@ -70,7 +70,7 @@ export class PrettyReporter implements Reporter {
     } else if (token.type === TokenType.error) {
       // Don't put an "at" for scanner errors
     } else {
-      tokenReporting = ` at ${token.lexeme}`;
+      tokenReporting = ` at '${token.lexeme}'`;
     }
 
     console.error(`${lineReporting} Error${tokenReporting ?? ""}: ${message}`);

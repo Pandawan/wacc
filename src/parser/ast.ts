@@ -3,6 +3,13 @@ import { TokenType } from "../lexer/token.ts";
 export interface Node {}
 
 export interface Expression extends Node {}
+export interface Statement extends Node {}
+
+export class Module implements Node {
+  constructor(public statements: Statement[]) {}
+}
+
+//#region Expressions
 
 export class InfixExpression implements Expression {
   constructor(
@@ -33,3 +40,17 @@ export class NumberExpression implements Expression {
 export class StringExpression implements Expression {
   constructor(public value: string) {}
 }
+
+//#endregion Expressions
+
+//#region Statements
+
+export class PrintStatement implements Statement {
+  constructor(public expression: Expression) {}
+}
+
+export class ExpressionStatement implements Statement {
+  constructor(public expression: Expression) {}
+}
+
+//#endregion

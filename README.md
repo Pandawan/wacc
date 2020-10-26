@@ -26,6 +26,9 @@ Thinking of doing simple recursive descent parser with pratt parsing.
 - [Crafting Interpreters Java Parser](https://craftinginterpreters.com/parsing-expressions.html)
 - [Otto - js parser in golang](https://github.com/robertkrimen/otto/tree/master/parser)
   - Really nice parser and easy to read through
+- [Rapidus - js parser in rust](https://github.com/maekawatoshiki/rapidus)
+  - I've noticed most parsers on GitHub don't handle multiple error reporting, they just report the first error and stop.
+  - I'm going to keep going with CraftingInterpreter's "Synchronize" approach because it handles multi-error reporting quite nicely.
 - [Ianertson video Make a compiler: parsing](https://www.youtube.com/watch?v=I5PWv5OBZms)
   - YT Series writing a compiler from start to finish in C, good to see implementation and thought process
   - Code can be found on [GitHub](https://github.com/sebbekarlsson/hello)
