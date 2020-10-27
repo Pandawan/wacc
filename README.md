@@ -50,6 +50,9 @@ Thinking of doing simple recursive descent parser with pratt parsing.
 
 ### Compiler / Emitter
 
+Two possibilities: use the visitor & resolver pattern like in JLox OR use a simple node traversal through the AST like in Chasm.
+
+- [Chasm Emitter](https://github.com/ColinEberhardt/chasm/blob/master/src/emitter.ts)
 - [Writing WebAssembly By Hand](https://blog.scottlogic.com/2018/04/26/webassembly-by-hand.html)
 - [WASM Manual](https://github.com/sunfishcode/wasm-reference-manual/blob/master/WebAssembly.md)
 - [UTF-8 Validation](https://lemire.me/blog/2020/10/20/ridiculously-fast-unicode-utf-8-validation/)
