@@ -1,90 +1,76 @@
 import { TokenType } from "../lexer/token.ts";
 
-export interface Node {}
-
-export interface Expression extends Node {
-  accept<R>(visitor: Visitor<R>): R;
-}
-export interface Statement extends Node {}
-
-export interface Visitor<R> {
-  visitInfixExpression(expr: InfixExpression): R;
-  visitPrefixExpression(expr: PrefixExpression): R;
-  visitBoolExpression(expr: BoolExpression): R;
-  visitNullExpression(expr: NullExpression): R;
-  visitNumberExpression(expr: NumberExpression): R;
-  visitStringExpression(expr: StringExpression): R;
+export class Module {
+  constructor(public readonly statements: Statement[]) {
+  }
 }
 
-export class Module implements Node {
-  constructor(public readonly statements: Statement[]) {}
-}
+/*
+ Note: I'm attempting to use the simpler "plain old data" structure for my AST 
+ rather than using Object Orientation. 
+ This means I won't be using the visitor pattern, but I have found that using  
+ switch statements seems to work just as well, all the while keeping the code
+ plain and simple. 
+
+ See discussion: https://softwareengineering.stackexchange.com/q/418389/378370
+*/
 
 //#region Expressions
 
-export class InfixExpression implements Expression {
-  constructor(
-    public readonly left: Expression,
-    public readonly operator: TokenType,
-    public readonly right: Expression,
-  ) {}
+export type Expression =
+  | InfixExpression
+  | PrefixExpression
+  | BoolExpression
+  | NullExpression
+  | NumberExpression
+  | StringExpression;
 
-  public accept<R>(visitor: Visitor<R>): R {
-    return visitor.visitInfixExpression(this);
-  }
+export interface InfixExpression {
+  type: "infix";
+  left: Expression;
+  operator: TokenType;
+  right: Expression;
 }
 
-export class PrefixExpression implements Expression {
-  constructor(
-    public readonly operator: TokenType,
-    public readonly right: Expression,
-  ) {}
-
-  public accept<R>(visitor: Visitor<R>): R {
-    return visitor.visitPrefixExpression(this);
-  }
+export interface PrefixExpression {
+  type: "prefix";
+  operator: TokenType;
+  right: Expression;
 }
 
-export class BoolExpression implements Expression {
-  constructor(public readonly value: boolean) {}
-
-  public accept<R>(visitor: Visitor<R>): R {
-    return visitor.visitBoolExpression(this);
-  }
+export interface BoolExpression {
+  type: "bool";
+  value: boolean;
 }
 
-export class NullExpression implements Expression {
-  public accept<R>(visitor: Visitor<R>): R {
-    return visitor.visitNullExpression(this);
-  }
+export interface NullExpression {
+  type: "null";
 }
 
-export class NumberExpression implements Expression {
-  constructor(public readonly value: number) {}
-
-  public accept<R>(visitor: Visitor<R>): R {
-    return visitor.visitNumberExpression(this);
-  }
+export interface NumberExpression {
+  type: "number";
+  value: number;
 }
 
-export class StringExpression implements Expression {
-  constructor(public readonly value: string) {}
-
-  public accept<R>(visitor: Visitor<R>): R {
-    return visitor.visitStringExpression(this);
-  }
+export interface StringExpression {
+  type: "string";
+  value: string;
 }
-
 //#endregion Expressions
 
 //#region Statements
 
-export class PrintStatement implements Statement {
-  constructor(public readonly expression: Expression) {}
+export type Statement =
+  | PrintStatement
+  | ExpressionStatement;
+
+export interface PrintStatement {
+  type: "print";
+  expression: Expression;
 }
 
-export class ExpressionStatement implements Statement {
-  constructor(public readonly expression: Expression) {}
+export interface ExpressionStatement {
+  type: "expression";
+  expression: Expression;
 }
-
 //#endregion

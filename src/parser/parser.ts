@@ -1,17 +1,11 @@
 import Lexer from "../lexer/lexer.ts";
 import Token, { TokenType } from "../lexer/token.ts";
 import {
-  BoolExpression,
   Expression,
   ExpressionStatement,
-  InfixExpression,
   Module,
-  NullExpression,
-  NumberExpression,
-  PrefixExpression,
   PrintStatement,
   Statement,
-  StringExpression,
 } from "./ast.ts";
 import { JsonReporter, Reporter } from "./reporter.ts";
 
@@ -100,13 +94,13 @@ export default class Parser {
   private parsePrintStatement(): PrintStatement {
     const expr = this.parseExpression();
     this.consume(TokenType.semicolon, "Expected ';' after value.");
-    return new PrintStatement(expr);
+    return { type: "print", expression: expr };
   }
 
   private parseExpressionStatement(): ExpressionStatement {
     const expr = this.parseExpression();
     this.consume(TokenType.semicolon, "Expected ';' after expression.");
-    return new ExpressionStatement(expr);
+    return { type: "expression", expression: expr };
   }
 
   //#endregion Statement Parsers
@@ -154,29 +148,30 @@ export default class Parser {
     if (this.match(TokenType.bang, TokenType.minus)) {
       const operator = this.previous.type;
       const right = this.parseUnary();
-      return new PrefixExpression(operator, right);
+      return { type: "prefix", operator, right };
     }
     return this.parsePrimary();
   }
 
   private parsePrimary(): Expression {
-    if (this.match(TokenType.false)) return new BoolExpression(false);
-    if (this.match(TokenType.true)) return new BoolExpression(true);
-    if (this.match(TokenType.null)) return new NullExpression();
+    if (this.match(TokenType.false)) return { type: "bool", value: false };
+    if (this.match(TokenType.true)) return { type: "bool", value: true };
+    if (this.match(TokenType.null)) return { type: "null" };
 
     if (this.match(TokenType.number)) {
-      return new NumberExpression(Number(this.previous.lexeme));
+      return { type: "number", value: Number(this.previous.lexeme) };
     }
 
     if (this.match(TokenType.string)) {
-      return new StringExpression(
-        this.previous.lexeme.substring(0, this.previous.lexeme.length),
-      );
+      return {
+        type: "string",
+        value: this.previous.lexeme.substring(0, this.previous.lexeme.length),
+      };
     }
 
     this.error("Expected expression.");
 
-    return new NullExpression();
+    return { type: "null" };
   }
 
   //#endregion Expression Parsing
@@ -195,7 +190,7 @@ export default class Parser {
     while (this.match(...tokenTypes)) {
       const operator = this.previous.type;
       const right = parseOperand();
-      expr = new InfixExpression(expr, operator, right);
+      expr = { type: "infix", operator, left: expr, right };
     }
 
     return expr;

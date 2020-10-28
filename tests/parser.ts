@@ -34,9 +34,14 @@ Deno.test("Parser expression number", () => {
   assertEquals(hadErrors, false);
   assert(module instanceof Module);
   assertEquals(module.statements, [
-    new ExpressionStatement(
-      new NumberExpression(5),
-    ),
+    // TODO: Need some way to type-check these at dev-time. Maybe constructor functions that create interface types?
+    {
+      type: "expression",
+      expression: {
+        type: "number",
+        value: 5,
+      },
+    },
   ]);
 });
 
@@ -47,9 +52,13 @@ Deno.test("Parser expression keyword", () => {
   assertEquals(hadErrors, false);
   assert(module instanceof Module);
   assertEquals(module.statements, [
-    new ExpressionStatement(
-      new BoolExpression(true),
-    ),
+    {
+      type: "expression",
+      expression: {
+        type: "bool",
+        value: true,
+      },
+    },
   ]);
 });
 
@@ -60,9 +69,13 @@ Deno.test("Parser expression string", () => {
   assertEquals(hadErrors, false);
   assert(module instanceof Module);
   assertEquals(module.statements, [
-    new ExpressionStatement(
-      new StringExpression('"Hello World"'),
-    ),
+    {
+      type: "expression",
+      expression: {
+        type: "string",
+        value: '"Hello World"',
+      },
+    },
   ]);
 });
 
@@ -73,38 +86,66 @@ Deno.test("Parser expression simple infix", () => {
   assertEquals(hadErrors, false);
   assert(module instanceof Module);
   assertEquals(module.statements, [
-    new ExpressionStatement(
-      new InfixExpression(
-        new NumberExpression(5),
-        TokenType.plus,
-        new NumberExpression(3),
-      ),
-    ),
+    {
+      type: "expression",
+      expression: {
+        type: "infix",
+        left: {
+          type: "number",
+          value: 5,
+        },
+        operator: TokenType.plus,
+        right: {
+          type: "number",
+          value: 3,
+        },
+      },
+    },
   ]);
 });
 
 Deno.test("Parser expression nested infix", () => {
-  const lexer = new Lexer("5 + -3 * 5 - 2;");
+  const lexer = new Lexer("5 + -3 * 1 - 2;");
   const parser = new Parser(lexer);
   const [hadErrors, module] = parser.parseModule();
   assertEquals(hadErrors, false);
   assert(module instanceof Module);
   assertEquals(module.statements, [
-    new ExpressionStatement(
-      new InfixExpression(
-        new InfixExpression(
-          new NumberExpression(5),
-          TokenType.plus,
-          new InfixExpression(
-            new PrefixExpression(TokenType.minus, new NumberExpression(3)),
-            TokenType.star,
-            new NumberExpression(5),
-          ),
-        ),
-        TokenType.minus,
-        new NumberExpression(2),
-      ),
-    ),
+    {
+      type: "expression",
+      expression: {
+        type: "infix",
+        left: {
+          type: "infix",
+          left: {
+            type: "number",
+            value: 5,
+          },
+          operator: TokenType.plus,
+          right: {
+            type: "infix",
+            left: {
+              type: "prefix",
+              operator: TokenType.minus,
+              right: {
+                type: "number",
+                value: 3,
+              },
+            },
+            operator: TokenType.star,
+            right: {
+              type: "number",
+              value: 1,
+            },
+          },
+        },
+        operator: TokenType.minus,
+        right: {
+          type: "number",
+          value: 2,
+        },
+      },
+    },
   ]);
 });
 
@@ -115,9 +156,13 @@ Deno.test("Parser print statement", () => {
   assertEquals(hadErrors, false);
   assert(module instanceof Module);
   assertEquals(module.statements, [
-    new PrintStatement(
-      new NumberExpression(1),
-    ),
+    {
+      type: "print",
+      expression: {
+        type: "number",
+        value: 1,
+      },
+    },
   ]);
 });
 

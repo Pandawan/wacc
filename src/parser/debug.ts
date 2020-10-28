@@ -1,44 +1,36 @@
-import { CharCode } from "../lexer/chars.ts";
-import { TokenType } from "../lexer/token.ts";
 import {
-  BoolExpression,
   Expression,
-  InfixExpression,
-  NullExpression,
-  NumberExpression,
-  PrefixExpression,
-  StringExpression,
-  Visitor,
+  Statement,
 } from "./ast.ts";
 
-class AstPrinter implements Visitor<string> {
-  print(expr: Expression): string {
-    return expr.accept(this);
-  }
-
-  visitInfixExpression(expr: InfixExpression): string {
-    return `(${expr.operator} ${expr.left.accept(this)} ${
-      expr.right.accept(this)
-    })`;
-  }
-  visitPrefixExpression(expr: PrefixExpression): string {
-    return `${expr.operator} ${expr.right.accept}`;
-  }
-  visitBoolExpression(expr: BoolExpression): string {
-    return expr.value.toString();
-  }
-  visitNullExpression(expr: NullExpression): string {
-    return "null";
-  }
-  visitNumberExpression(expr: NumberExpression): string {
-    return expr.value.toString();
-  }
-  visitStringExpression(expr: StringExpression): string {
-    return expr.value;
+export function printExpressionAst(expr: Expression): string {
+  switch (expr.type) {
+    case "infix":
+      return `(${expr.operator} ${printExpressionAst(expr.left)} ${
+        printExpressionAst(expr.right)
+      })`;
+    case "prefix":
+      return `(${expr.operator} ${printExpressionAst(expr.right)})`;
+    case "bool":
+      return expr.value.toString();
+    case "null":
+      return "null";
+    case "number":
+      return expr.value.toString();
+    case "string":
+      return expr.value;
+    default:
+      throw new Error(`Unexpected expression type: ${expr}`);
   }
 }
 
-export function printAst(expr: Expression): string {
-  const printer = new AstPrinter();
-  return printer.print(expr);
+export function printStatementAst(stmt: Statement): string {
+  switch (stmt.type) {
+    case "expression":
+      return `(expression ${printExpressionAst(stmt.expression)})`;
+    case "print":
+      return `(print ${printExpressionAst(stmt.expression)})`;
+    default:
+      throw new Error(`Unexpected statement type: ${stmt}`);
+  }
 }
